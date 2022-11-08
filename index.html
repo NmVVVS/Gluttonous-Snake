@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<canvas id="canvas" width="500" height="500">
+
+</canvas>
+<p>当前长度：<span id="currentLength"></span></p>
+<p id="nextPoint"></p>
+</body>
+<script>
+
+
+    let canvas = document.getElementById('canvas');
+    let ctx = canvas.getContext('2d');
+
+    ctx.strokeStyle = "#ddd";
+    ctx.lineWidth = 1;
+
+    let maxWidth = 500;
+    let maxHeight = 500;
+    let snakeLength = 3;
+    let snakePath = [{x: 410, y: 40}, {x: 420, y: 40}, {x: 430, y: 40}];
+    let snakeHeaderPoint = {x: 400, y: 40};
+    let step = 10;
+    let frame = 0;
+    let moveDirection = 'down';
+    let refreshSnakeId = 0;
+    let foodPoint = {x: 0, y: 0};
+    let isOver = false;
+
+    getFoodPoint();
+    drawSnake();
+    refreshSnakeId = window.requestAnimationFrame(refreshSnake);
+
+    /**
+     * 刷新动画
+     */
+    function refreshSnake() {
+        frame++;
+        if (frame % 2 === 0) {
+            forward();
+        }
+        refreshSnakeId = window.requestAnimationFrame(refreshSnake);
+    }
+
+
+    function getFoodPoint() {
+        foodPoint = getNewPoint();
+        let isHas = false;
+        for (let item of snakePath) {
+            if (item.x === foodPoint.x && item.y === foodPoint.y) {
+                console.log("CCC");
+                isHas = true;
+            }
+        }
+        if (isHas) getFoodPoint();
+    }
+
+    /**
+     * 获取随机点
+     * @returns {{x: number, y: number}}
+     */
+    function getNewPoint() {
+        let x = Math.round(Math.random() * 50) * 10;
+        let y = Math.round(Math.random() * 50) * 10;
+        return {x: x, y: y};
+    }
+
+    /**
+     * 根据前进点
+     * 开始画蛇
+     */
+    function drawSnake() {
+        document.getElementById('currentLength').innerHTML = snakePath.length.toString();
+
+        ctx.clearRect(0, 0, 500, 500);
+        // drawLine();
+
+        //画食物
+        ctx.fillStyle = "#00FF00";
+        ctx.beginPath();
+        ctx.fillRect(foodPoint.x, foodPoint.y, 10, 10);
+
+        //画蛇头
+        ctx.fillStyle = "#FF0000";
+        ctx.beginPath();
+        ctx.fillRect(snakeHeaderPoint.x, snakeHeaderPoint.y, 10, 10);
+
+        //画蛇身
+        ctx.fillStyle = "#000";
+        for (let point of snakePath) {
+            ctx.beginPath();
+            ctx.fillRect(point.x, point.y, 10, 10);
+        }
+    }
+
+    /**
+     * 前进点计算
+     */
+    function forward() {
+        if (isObjectValueEqual(snakeHeaderPoint, foodPoint)) {
+            getFoodPoint();
+        } else {
+            snakePath.pop();
+        }
+        snakePath.unshift(Object.assign({}, snakeHeaderPoint));
+        switch (moveDirection) {
+            case "left":
+                snakeHeaderPoint.x -= step;
+                break;
+            case "up":
+                snakeHeaderPoint.y -= step;
+                break;
+            case "right":
+                snakeHeaderPoint.x += step;
+                break;
+            case "down":
+                snakeHeaderPoint.y += step;
+                break;
+        }
+
+        for (let item of snakePath) {
+            if (item.x === snakeHeaderPoint.x && item.y === snakeHeaderPoint.y) {
+                over();
+            }
+        }
+
+        if (snakeHeaderPoint.x >= maxWidth || snakeHeaderPoint.y >= maxHeight || snakeHeaderPoint.x < 0 || snakeHeaderPoint.y < 0 || snakePath.indexOf(Object.assign({}, snakeHeaderPoint)) !== -1) {
+            over();
+        }
+        if (!isOver) {
+            drawSnake();
+        }
+    }
+
+    /**
+     * 画出方格
+     */
+    function drawLine() {
+        for (let x = 10; x < 500; x += 10) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, 500);
+            ctx.stroke();
+        }
+
+        for (let y = 10; y < 500; y += 10) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(500, y);
+            ctx.stroke();
+        }
+    }
+
+    /**
+     * 监听键盘方向键
+     */
+    document.onkeydown = function (event) {
+        let e = event || arguments.callee.caller.arguments[0];
+        switch (e.key) {
+            case "d":
+            case "ArrowRight":
+                if (moveDirection === 'right' || moveDirection === 'left') break;
+                moveDirection = 'right';
+                break;
+            case "a":
+            case "ArrowLeft":
+                if (moveDirection === 'right' || moveDirection === 'left') break;
+                moveDirection = 'left';
+                break;
+            case "s":
+            case "ArrowDown" :
+                if (moveDirection === 'up' || moveDirection === 'down') break;
+                moveDirection = 'down';
+                break;
+            case "w":
+            case "ArrowUp":
+                if (moveDirection === 'up' || moveDirection === 'down') break;
+                moveDirection = 'up';
+                break;
+        }
+    };
+
+    function isObjectValueEqual(a, b) {
+        let aProps = Object.getOwnPropertyNames(a);
+        let bProps = Object.getOwnPropertyNames(b);
+        if (aProps.length !== bProps.length) {
+            return false;
+        }
+        for (let i = 0; i < aProps.length; i++) {
+            let propName = aProps[i];
+
+            let propA = a[propName];
+            let propB = b[propName];
+            if ((typeof (propA) === 'object')) {
+                if (this.isObjectValueEqual(propA, propB)) {
+                    // return true     这里不能return ,后面的对象还没判断
+                } else {
+                    return false
+                }
+            } else if (propA !== propB) {
+                return false
+            } else {
+            }
+        }
+        return true
+    }
+
+    function over() {
+        isOver = true;
+        window.cancelAnimationFrame(this.refreshSnakeId);
+        document.getElementById('nextPoint').innerHTML = '游戏结束';
+    }
+
+</script>
+<style>
+    body {
+        text-align: center;
+    }
+
+    #canvas {
+        width: 500px;
+        height: 500px;
+        margin: auto;
+        border: 1px dashed #ccc;
+    }
+</style>
+</html>
